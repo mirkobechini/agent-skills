@@ -53,12 +53,12 @@ page.insert_text(point=(x, y), text="Hello", fontsize=12,
 
 ## Common Font Names
 
-| Name | Description |
-|------|-------------|
+| Name   | Description            |
+| ------ | ---------------------- |
 | `helv` | Helvetica (sans-serif) |
-| `tiro` | Times Roman (serif) |
-| `cour` | Courier (monospace) |
-| `zadb` | Zapf Dingbats |
+| `tiro` | Times Roman (serif)    |
+| `cour` | Courier (monospace)    |
+| `zadb` | Zapf Dingbats          |
 
 ## Matrix & Rect
 
