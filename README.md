@@ -1,6 +1,6 @@
 # Agent Skills
 
-A collection of reusable, on-demand skills for [VS Code Copilot agents](https://code.visualstudio.com/docs/copilot/customization/agent-skills).
+A collection of reusable, on-demand skills compatible with any agent that supports the **SKILL.md** format — including VS Code Copilot, Claude, Cline, and other AI coding agents.
 
 ## Skills
 
