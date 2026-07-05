@@ -1,6 +1,9 @@
 ---
 name: pr-summary-handoff
+version: 1.0.0
+author: Mirko Bechini
 description: "Guides the developer through creating a Pull Request on GitHub after completing a feature or hotfix branch, generating the PR link and a summary of changes. Activate when a working branch is completed and needs to be merged into dev or main."
+argument-hint: "[--branch BRANCH] [--target TARGET] [--title TITLE] [--telegram]"
 user-invocable: true
 applyTo: "**"
 ---
@@ -23,6 +26,47 @@ applyTo: "**"
 5. **Direct link** and a **summary message** in Italian with what was fixed and how
 6. **Telegram notification** with the PR summary
 7. _(Optional, hotfix only)_ **Merge and cleanup** with automatic sync back to `dev`
+
+## Available Scripts
+
+| Script         | Purpose                                                | Usage                                                                         |
+| -------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `pr_create.py` | Automate PR creation with validation and notifications | `python scripts/pr_create.py [--telegram] [--bot-token TOKEN] [--chat-id ID]` |
+
+### Script Usage: `pr_create.py`
+
+**Features:**
+
+- Automatic branch detection and target determination
+- Environment validation (git, gh, curl)
+- Sync with target branch
+- Create PR via GitHub CLI
+- Optional Telegram notifications
+- Full error handling and logging
+
+**Basic usage:**
+
+```bash
+python scripts/pr_create.py
+```
+
+**With Telegram notification:**
+
+```bash
+python scripts/pr_create.py --telegram --bot-token <TOKEN> --chat-id <ID>
+```
+
+**Custom title and body:**
+
+```bash
+python scripts/pr_create.py --title "My Feature" --body "Detailed description"
+```
+
+**Full options:**
+
+```bash
+python scripts/pr_create.py --help
+```
 
 ## Prerequisites
 
@@ -321,3 +365,35 @@ per garantire che lo sconto non superi il 100% del totale.
   ```
   https://github.com/<owner>/<repo>/pull/new/<branch>?base=$TARGET_BRANCH
   ```
+
+## File Structure
+
+```
+pr-summary-handoff/
+├── SKILL.md                              # Main documentation (this file)
+├── README.md                             # Quick reference (optional)
+├── requirements.txt                      # Python dependencies
+├── pytest.ini                            # pytest configuration
+├── .gitignore                            # Git ignore rules
+│
+├── scripts/
+│   ├── __init__.py                       # Package marker
+│   └── pr_create.py                      # Main PR creation automation script
+│
+├── tests/
+│   ├── __init__.py                       # Package marker
+│   └── test_pr_operations.py             # Test suite (pytest)
+│
+├── assets/
+│   └── PULL_REQUEST_TEMPLATE.md          # PR template for repositories
+│
+└── references/
+    └── GITHUB_CLI_API.md                 # GitHub CLI command reference
+```
+
+## Metadata
+
+- **Last Updated**: 2026-07-05
+- **Status**: Active
+- **Maintainer**: Mirko Bechini
+- **Version**: 1.0.0

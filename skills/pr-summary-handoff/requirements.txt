@@ -1,0 +1,14 @@
+# PR Summary Handoff dependencies
+#
+# Core dependencies:
+# - None (uses standard library + subprocess for external tools)
+#
+# External tools (must be installed separately):
+# - gh (GitHub CLI): https://cli.github.com/
+# - git: https://git-scm.com/
+# - curl: included on macOS/Linux; pre-installed on Windows 10+
+#
+# Development dependencies (for testing and code quality):
+pytest>=7.4.0          # Testing framework
+black>=23.0.0          # Code formatter
+pylint>=2.17.0         # Static code analysis
