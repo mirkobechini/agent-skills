@@ -1,0 +1,9 @@
+{
+  "example_key_1": "Replace with your actual data format",
+  "example_key_2": 42,
+  "example_key_3": ["item1", "item2", "item3"],
+  "nested_object": {
+    "property_a": "value_a",
+    "property_b": true
+  }
+}

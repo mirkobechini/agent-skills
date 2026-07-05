@@ -1,0 +1,16 @@
+# List your project dependencies here
+# Format: package_name==version (pin versions for reproducibility)
+# or: package_name>=version (for minimum version requirement)
+
+# Example dependencies - REPLACE WITH YOUR ACTUAL DEPENDENCIES:
+# requests==2.31.0
+# numpy>=1.24.0
+# pydantic>=2.0
+
+# If using a script template (example.py):
+# argparse is built-in, no need to install
+
+# Development dependencies (optional - use for testing, linting):
+# pytest==7.4.0
+# black==23.9.1
+# pylint==2.17.5

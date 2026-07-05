@@ -25,6 +25,28 @@ skills/<skill-name>/
 └── assets/            # Templates, boilerplate, config files
 ```
 
+## Creating a New Skill
+
+Use the template in `TEMPLATE/` to create professional skills quickly:
+
+```bash
+# 1. Copy the template skeleton
+cd skills/
+cp -r ../TEMPLATE/template-skill/ my-new-skill/
+cd my-new-skill/
+
+# 2. Edit SKILL.md with your skill's content
+# 3. Add code to scripts/ folder
+# 4. Test everything locally
+```
+
+**Complete guide**: See `TEMPLATE/HOW-TO-CREATE-A-SKILL.md` for step-by-step instructions on:
+
+- Filling in the YAML frontmatter
+- Writing each section (When to Use, Output, Prerequisites, Procedure, Examples, etc.)
+- Testing and verification checklist
+- Common mistakes to avoid
+
 ## Requirements
 
 - VS Code with Copilot agent features enabled
