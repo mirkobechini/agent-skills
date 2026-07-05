@@ -1,0 +1,9 @@
+{
+  "sleep": {
+    "hours": 6.5,
+    "quality": "restful"
+  },
+  "hydration": 2.1,
+  "nutrition_status": "maintenance",
+  "perceived_fatigue_level": 5
+}

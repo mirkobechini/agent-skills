@@ -1,0 +1,15 @@
+📋 Training Adjustment Report
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Generated: 2026-07-05 21:47:08
+Recovery Status: 🟡 GOOD (1.05x multiplier)
+
+Today's Training Adjustments:
+  • No reduction needed — full volume ahead
+  • Max RPE: 10/10 (avoid near-max efforts)
+
+Recovery Optimization:
+  ✓ Sleep: On track. Maintain 7–8 hour target.
+  ✓ Hydration: Excellent (2.5L). Maintain.
+  📊 Nutrition: 2490/2500 cal (99.6%) ✓ On target
+
+Next Check: Tomorrow morning (sleep tracking)
