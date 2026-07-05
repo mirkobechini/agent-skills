@@ -53,17 +53,34 @@ class TestCollectMetrics:
         with pytest.raises(ValueError):
             validate_hydration(-1)
     
-    def test_validate_nutrition_valid(self):
-        """Test valid nutrition statuses."""
-        assert validate_nutrition("surplus") == "surplus"
-        assert validate_nutrition("deficit") == "deficit"
-        assert validate_nutrition("maintenance") == "maintenance"
-        assert validate_nutrition("untracked") == "untracked"
+    def test_validate_nutrition_descriptive(self):
+        """Test descriptive nutrition validation."""
+        from scripts.collect_recovery_metrics import validate_nutrition
+        
+        result = validate_nutrition(nutrition_status="seguita-bene")
+        assert result["status"] == "seguita-bene"
+        assert "normalized" in result
     
-    def test_validate_nutrition_invalid(self):
-        """Test invalid nutrition status."""
-        with pytest.raises(ValueError):
-            validate_nutrition("invalid")
+    def test_validate_nutrition_numeric(self):
+        """Test numeric nutrition validation."""
+        from scripts.collect_recovery_metrics import validate_nutrition
+        
+        result = validate_nutrition(nutrition_target=2500, nutrition_consumed=2400)
+        assert result["numeric"]["target"] == 2500
+        assert result["numeric"]["consumed"] == 2400
+        assert result["numeric"]["delta"] == -100
+    
+    def test_validate_nutrition_mixed(self):
+        """Test mixed nutrition validation."""
+        from scripts.collect_recovery_metrics import validate_nutrition
+        
+        result = validate_nutrition(
+            nutrition_status="seguita-bene",
+            nutrition_target=2500,
+            nutrition_consumed=2500
+        )
+        assert "status" in result
+        assert "numeric" in result
     
     def test_validate_fatigue_valid(self):
         """Test valid fatigue levels."""

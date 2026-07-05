@@ -7,22 +7,55 @@
 **Arguments:**
 
 - `--sleep HOURS` (float, 0–24): Sleep hours. Infers quality automatically (restful: 7+h, interrupted: 5.5–7h, poor: <5.5h)
-- `--hydration LITERS` (float, 0–20): Hydration intake in liters
-- `--nutrition {surplus|deficit|maintenance|untracked}`: Current caloric status
+- `--hydration LITERS` (float, 0–20): Water drunk **so far today** in liters
+- `--nutrition-status {seguita-bene|sgarrata-leggera|sgarrata-forte|on-target}` (optional): Descriptive diet adherence
+- `--nutrition-target CALORIES` (optional): Target calories for today
+- `--nutrition-consumed CALORIES` (optional): Calories consumed so far today
 - `--fatigue LEVEL` (int, 1–10): Perceived fatigue (1=fresh, 10=exhausted)
 - `--output FILE` (str): Output JSON filename (default: `metrics.json`)
 
-**Output Format (JSON):**
+**Nutrition Modes:**
+
+- **Descriptive**: Use `--nutrition-status "seguita-bene"` (diet followed well) or similar
+- **Numeric**: Use `--nutrition-target 2500 --nutrition-consumed 2100` (calorie tracking)
+- **Mixed**: Can use both simultaneously
+
+**Output Format (JSON) — Descriptive Mode:**
 
 ```json
 {
   "sleep": {
     "hours": 6.5,
-    "quality": "restful" // "restful" | "interrupted" | "poor"
+    "quality": "interrupted"
   },
   "hydration": 2.1,
-  "nutrition_status": "maintenance",
+  "nutrition": {
+    "status": "seguita-bene",
+    "normalized": "adherence:95"
+  },
   "perceived_fatigue_level": 5
+}
+```
+
+**Output Format (JSON) — Numeric Mode:**
+
+```json
+{
+  "sleep": {
+    "hours": 7.5,
+    "quality": "restful"
+  },
+  "hydration": 2.3,
+  "nutrition": {
+    "numeric": {
+      "target": 2500,
+      "consumed": 2100,
+      "delta": -400,
+      "adherence_percent": 84.0
+    },
+    "normalized": "adherence:85"
+  },
+  "perceived_fatigue_level": 3
 }
 ```
 
@@ -40,7 +73,8 @@
 - Sleep: +0.15x (restful), +0x (interrupted), -0.15x (poor)
 - Hydration: +0.05x (≥2.0L), +0x (1.5–2.0L), -0.1x (<1.5L)
 - Fatigue: -0.02x per level above 5 (e.g., fatigue 8 → -0.06x)
-- Nutrition: +0.05x (surplus), -0.1x (deficit), 0x (maintenance), -0.02x (untracked)
+- **Nutrition (Descriptive)**: +0.05x (seguita-bene), 0x (on-target), -0.05x (sgarrata-leggera), -0.1x (sgarrata-forte)
+- **Nutrition (Numeric)**: +0.05x (≥95% adherence), 0x (85–95%), -0.05x (70–85%), -0.1x (<70%)
 - **Clamp:** 0.7x–1.2x range
 
 **Output Format (JSON):**

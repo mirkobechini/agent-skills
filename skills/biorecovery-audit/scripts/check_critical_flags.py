@@ -70,9 +70,10 @@ def check_critical_flags(metrics: dict) -> dict:
         )
     
     # Check nutrition + fatigue combo
-    if fatigue >= 7 and metrics["nutrition_status"] == "deficit":
+    nutrition_status = metrics.get("nutrition", {}).get("normalized", "untracked")
+    if fatigue >= 7 and ("deficit" in nutrition_status or "sgarrata" in nutrition_status):
         flags["warnings"].append(
-            "⚠️  Combo Risk: High fatigue + energy deficit. Risk of hormonal dysregulation."
+            "⚠️  Combo Risk: High fatigue + poor nutrition. Risk of hormonal dysregulation."
         )
     
     return flags

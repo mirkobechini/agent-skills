@@ -2,6 +2,7 @@
 """
 Collect recovery metrics from user input.
 Parses sleep, hydration, nutrition, and fatigue data into validated JSON.
+Supports flexible nutrition input: descriptive ("seguita-bene") or numeric (calories).
 """
 
 import argparse
@@ -32,12 +33,67 @@ def validate_hydration(hydration_liters: float) -> float:
     return hydration_liters
 
 
-def validate_nutrition(nutrition_status: str) -> str:
-    """Validate nutrition status."""
-    valid = ["surplus", "deficit", "maintenance", "untracked"]
-    if nutrition_status not in valid:
-        raise ValueError(f"Nutrition status must be one of {valid}. Got: {nutrition_status}")
-    return nutrition_status
+def validate_nutrition(
+    nutrition_status: str = None,
+    nutrition_target: int = None,
+    nutrition_consumed: int = None
+) -> dict:
+    """
+    Validate nutrition input. Supports two modes:
+    1. Descriptive: "seguita-bene", "sgarrata-leggera", "sgarrata-forte", "on-target"
+    2. Numeric: target and consumed calories
+    """
+    valid_descriptive = ["seguita-bene", "sgarrata-leggera", "sgarrata-forte", "on-target"]
+    
+    nutrition = {}
+    
+    # Mode 1: Descriptive
+    if nutrition_status:
+        if nutrition_status not in valid_descriptive:
+            raise ValueError(
+                f"Nutrition status must be one of {valid_descriptive}. Got: {nutrition_status}"
+            )
+        nutrition["status"] = nutrition_status
+        
+        # Map descriptive to numeric impact
+        status_map = {
+            "seguita-bene": "adherence:95",
+            "on-target": "adherence:90",
+            "sgarrata-leggera": "adherence:70",
+            "sgarrata-forte": "adherence:40",
+        }
+        nutrition["normalized"] = status_map.get(nutrition_status, nutrition_status)
+    
+    # Mode 2: Numeric (calories)
+    if nutrition_target is not None and nutrition_consumed is not None:
+        if nutrition_target <= 0 or nutrition_consumed < 0:
+            raise ValueError(f"Calories must be positive. Target: {nutrition_target}, Consumed: {nutrition_consumed}")
+        
+        delta = nutrition_consumed - nutrition_target
+        adherence_pct = (nutrition_consumed / nutrition_target * 100) if nutrition_target > 0 else 0
+        
+        nutrition["numeric"] = {
+            "target": nutrition_target,
+            "consumed": nutrition_consumed,
+            "delta": delta,
+            "adherence_percent": round(adherence_pct, 1)
+        }
+        
+        # Normalize to status string
+        if abs(delta) <= 100:
+            nutrition["normalized"] = "adherence:90"
+        elif delta > 100 and delta <= 300:
+            nutrition["normalized"] = "surplus"
+        elif delta < -100 and delta >= -300:
+            nutrition["normalized"] = "deficit"
+        elif abs(delta) > 300:
+            nutrition["normalized"] = "sgarrata-forte" if delta < 0 else "surplus:strong"
+    
+    # Default if nothing provided
+    if not nutrition:
+        nutrition["normalized"] = "untracked"
+    
+    return nutrition
 
 
 def validate_fatigue(fatigue_level: int) -> int:
@@ -47,12 +103,22 @@ def validate_fatigue(fatigue_level: int) -> int:
     return fatigue_level
 
 
-def collect_metrics(sleep: float, hydration: float, nutrition: str, fatigue: int) -> dict:
+def collect_metrics(
+    sleep: float,
+    hydration: float,
+    fatigue: int,
+    nutrition_status: str = None,
+    nutrition_target: int = None,
+    nutrition_consumed: int = None
+) -> dict:
     """Collect and validate all recovery metrics."""
+    
+    nutrition = validate_nutrition(nutrition_status, nutrition_target, nutrition_consumed)
+    
     metrics = {
         "sleep": validate_sleep(sleep),
         "hydration": validate_hydration(hydration),
-        "nutrition_status": validate_nutrition(nutrition),
+        "nutrition": nutrition,
         "perceived_fatigue_level": validate_fatigue(fatigue),
     }
     return metrics
@@ -63,21 +129,47 @@ def main():
         description="Collect recovery metrics for biorecovery audit"
     )
     parser.add_argument("--sleep", type=float, default=7.0, help="Sleep hours (0-24)")
-    parser.add_argument("--hydration", type=float, default=2.0, help="Hydration in liters (0-20)")
     parser.add_argument(
-        "--nutrition",
-        type=str,
-        default="maintenance",
-        choices=["surplus", "deficit", "maintenance", "untracked"],
-        help="Nutrition status"
+        "--hydration",
+        type=float,
+        default=2.0,
+        help="Water drunk so far today in liters (0-20)"
     )
     parser.add_argument("--fatigue", type=int, default=5, help="Fatigue level (1-10)")
+    
+    # Nutrition: descriptive mode
+    parser.add_argument(
+        "--nutrition-status",
+        type=str,
+        choices=["seguita-bene", "sgarrata-leggera", "sgarrata-forte", "on-target"],
+        help="Nutrition adherence (descriptive mode)"
+    )
+    
+    # Nutrition: numeric mode
+    parser.add_argument(
+        "--nutrition-target",
+        type=int,
+        help="Target calories for today (numeric mode)"
+    )
+    parser.add_argument(
+        "--nutrition-consumed",
+        type=int,
+        help="Calories consumed so far today (numeric mode)"
+    )
+    
     parser.add_argument("--output", type=str, default="metrics.json", help="Output JSON file")
     
     args = parser.parse_args()
     
     try:
-        metrics = collect_metrics(args.sleep, args.hydration, args.nutrition, args.fatigue)
+        metrics = collect_metrics(
+            sleep=args.sleep,
+            hydration=args.hydration,
+            fatigue=args.fatigue,
+            nutrition_status=args.nutrition_status,
+            nutrition_target=args.nutrition_target,
+            nutrition_consumed=args.nutrition_consumed,
+        )
         
         # Write to JSON
         output_path = Path(args.output)
@@ -86,10 +178,18 @@ def main():
         
         # Print summary
         print("✅ Recovery metrics collected:")
-        print(f"  • Sleep: {metrics['sleep']['hours']} hours ({metrics['sleep']['quality']})")
-        print(f"  • Hydration: {metrics['hydration']} liters")
-        print(f"  • Nutrition Status: {metrics['nutrition_status']}")
-        print(f"  • Perceived Fatigue: {metrics['perceived_fatigue_level']}/10")
+        print(f"  • Sleep: {metrics['sleep']['hours']}h ({metrics['sleep']['quality']})")
+        print(f"  • Hydration (so far today): {metrics['hydration']}L")
+        print(f"  • Fatigue: {metrics['perceived_fatigue_level']}/10")
+        
+        # Nutrition summary
+        nutrition = metrics["nutrition"]
+        if "numeric" in nutrition:
+            num = nutrition["numeric"]
+            print(f"  • Nutrition: {num['consumed']}/{num['target']} cal ({num['adherence_percent']}%, delta: {num['delta']:+d})")
+        else:
+            print(f"  • Nutrition: {nutrition.get('status', 'untracked')}")
+        
         print(f"\n📁 Saved to: {output_path}")
         
     except (ValueError, IOError) as e:

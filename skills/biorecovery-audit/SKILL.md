@@ -3,7 +3,7 @@ name: biorecovery-audit
 version: 1.0.0
 author: Mirko Bechini
 description: "Audit sleep, hydration, and nutrition metrics to generate a recovery score that gates training intensity and prevents overtraining. Use when assessing if an athlete is sufficiently recovered to train at planned intensity, or to adjust workouts based on current recovery state."
-argument-hint: "[recovery_audit] [--sleep HOURS] [--hydration LITERS] [--fatigue 1-10] [--nutrition STATUS]"
+argument-hint: "[recovery_audit] [--sleep HOURS] [--hydration LITERS] [--nutrition-status ADHERENCE | --nutrition-target N --nutrition-consumed N] [--fatigue 1-10]"
 user-invocable: true
 applyTo: "**"
 ---
@@ -84,20 +84,41 @@ Python 3.8.x (or higher)
 
 ### Step 1: Gather Recovery Input Data
 
-Collect the user's current sleep, hydration, nutrition, and fatigue metrics. These four data points form the basis of the recovery audit.
+Collect the user's current sleep, hydration, nutrition, and fatigue metrics. For nutrition, use **either**:
+
+- **Descriptive mode**: --nutrition-status "seguita-bene" (followed diet well)
+- **Numeric mode**: --nutrition-target 2500 --nutrition-consumed 2400 (calorie tracking)
+
+Example with descriptive nutrition:
 
 ```bash
-python scripts/collect_recovery_metrics.py --sleep 6.5 --hydration 2.1 --nutrition maintenance --fatigue 5
+python scripts/collect_recovery_metrics.py --sleep 6.5 --hydration 2.1 --nutrition-status "seguita-bene" --fatigue 5
 ```
 
 **Output**:
 
 ```
 ✅ Recovery metrics collected:
-  • Sleep: 6.5 hours (quality: restful)
-  • Hydration: 2.1 liters
-  • Nutrition Status: maintenance
-  • Perceived Fatigue: 5/10
+  • Sleep: 6.5h (interrupted)
+  • Hydration (so far today): 2.1L
+  • Fatigue: 5/10
+  • Nutrition: seguita-bene
+```
+
+Or with numeric nutrition:
+
+```bash
+python scripts/collect_recovery_metrics.py --sleep 6.5 --hydration 2.1 --nutrition-target 2500 --nutrition-consumed 2400 --fatigue 5
+```
+
+**Output**:
+
+```
+✅ Recovery metrics collected:
+  • Sleep: 6.5h (interrupted)
+  • Hydration (so far today): 2.1L
+  • Fatigue: 5/10
+  • Nutrition: 2400/2500 cal (96.0%, delta: -100)
 ```
 
 ### Step 2: Calculate Recovery Score
@@ -154,40 +175,60 @@ Next Check: Tomorrow morning (sleep tracking)
 
 ## Reference
 
-| Command                         | Purpose                                                             | Input                                                                                                 | Output                                                            |
-| ------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `collect_recovery_metrics.py`   | Parse user input (sleep, hydration, nutrition, fatigue)             | `--sleep HOURS --hydration LITERS --nutrition [surplus/deficit/maintenance/untracked] --fatigue 1-10` | JSON file with validated metrics                                  |
-| `calculate_recovery_score.py`   | Compute recovery multiplier (0.7x–1.2x) based on metrics            | `--input metrics.json`                                                                                | Recovery score, multiplier, RPE ceiling                           |
-| `generate_adjustment_report.py` | Create training adjustment + optimization guidance                  | `--recovery-score VALUE --output report.txt`                                                          | Human-readable adjustment report                                  |
-| `check_critical_flags.py`       | Detect safety violations (sleep debt, dehydration, extreme fatigue) | `--input metrics.json`                                                                                | Safety warnings (if any)                                          |
-| `persistent_storage_write.py`   | Store recovery score in session state for workout scheduler         | `--recovery-score VALUE --session-id ID`                                                              | Write confirmation to `session.persistent_storage.recovery_score` |
+| Command                         | Purpose                                                             | Input                                                                                                                                                                            | Output                                                            |
+| ------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `collect_recovery_metrics.py`   | Parse user input (sleep, hydration, nutrition, fatigue)             | `--sleep HOURS --hydration LITERS [--nutrition-status "seguita-bene\|sgarrata-leggera\|sgarrata-forte\|on-target"] [--nutrition-target N --nutrition-consumed N] --fatigue 1-10` | JSON file with validated metrics                                  |
+| `calculate_recovery_score.py`   | Compute recovery multiplier (0.7x–1.2x) based on metrics            | `--input metrics.json`                                                                                                                                                           | Recovery score, multiplier, RPE ceiling                           |
+| `generate_adjustment_report.py` | Create training adjustment + optimization guidance                  | `--recovery-score VALUE --input metrics.json`                                                                                                                                    | Human-readable adjustment report                                  |
+| `check_critical_flags.py`       | Detect safety violations (sleep debt, dehydration, extreme fatigue) | `--input metrics.json`                                                                                                                                                           | Safety warnings (if any)                                          |
+| `persistent_storage_write.py`   | Store recovery score in session state for workout scheduler         | `--recovery-score VALUE [--session-id ID]`                                                                                                                                       | Write confirmation to `session.persistent_storage.recovery_score` |
 
 ## Examples
 
-### Example 1: Athlete Checks Recovery Before Morning Workout
+### Example 1: Athlete Checks Recovery (Descriptive Nutrition)
 
-**User Request**: "I slept 7 hours, drank 2.2 liters today, feeling energized. Should I do my planned intense leg day?"
+**User Request**: "I slept 7 hours, drank 2.2 liters, followed my diet well. Feeling energized. Should I do my planned intense leg day?"
 
 ```bash
-python scripts/collect_recovery_metrics.py --sleep 7 --hydration 2.2 --nutrition surplus --fatigue 2 && \
+python scripts/collect_recovery_metrics.py --sleep 7 --hydration 2.2 --nutrition-status "seguita-bene" --fatigue 2 && \
 python scripts/calculate_recovery_score.py --input metrics.json
 ```
 
 **Result**:
 
 - Recovery Score: **1.1x** (excellent recovery)
-- RPE Ceiling: **9/10** (intense training approved)
+- RPE Ceiling: **10/10** (intense training approved)
 - Training Adjustment: **No reduction needed** — full volume ahead
-- Recommendation: All-clear for planned leg day; consider adding accessory work
+- Nutrition: ✓ Diet followed well
+- Recommendation: All-clear for planned leg day
 
 ---
 
-### Example 2: Athlete is Fatigued with Poor Sleep; Workout Scheduler Must Adapt
+### Example 2: Athlete Tracks Calories (Numeric Nutrition)
 
-**User Request**: "I only slept 4.5 hours (poor quality), drank 1.2L (training day), feeling very tired at 8/10 fatigue. I have a scheduled high-intensity session. Can I do it?"
+**User Request**: "I've eaten 2100 calories so far, my target is 2200. I slept 7.5 hours, drank 2.3L, feeling fresh."
 
 ```bash
-python scripts/collect_recovery_metrics.py --sleep 4.5 --hydration 1.2 --nutrition deficit --fatigue 8 && \
+python scripts/collect_recovery_metrics.py --sleep 7.5 --hydration 2.3 --nutrition-target 2200 --nutrition-consumed 2100 --fatigue 2 && \
+python scripts/calculate_recovery_score.py --input metrics.json
+```
+
+**Result**:
+
+- Recovery Score: **1.15x** (excellent recovery)
+- RPE Ceiling: **10/10** (maximum intensity)
+- Training Adjustment: **No reduction** — 95.5% adherence to target
+- Nutrition: 📊 2100/2200 cal (95.5%) ✓ On target
+- Recommendation: Optimal conditions for heavy training
+
+---
+
+### Example 3: Athlete is Fatigued, Cheated Diet (Critical Deficit)
+
+**User Request**: "I only slept 4.5 hours, drank 1.2L, had a big cheat day, feeling exhausted at 8/10. I have a high-intensity session. Can I do it?"
+
+```bash
+python scripts/collect_recovery_metrics.py --sleep 4.5 --hydration 1.2 --nutrition-status "sgarrata-forte" --fatigue 8 && \
 python scripts/calculate_recovery_score.py --input metrics.json && \
 python scripts/check_critical_flags.py --input metrics.json
 ```
@@ -195,12 +236,13 @@ python scripts/check_critical_flags.py --input metrics.json
 **Result**:
 
 - Recovery Score: **0.65x** (CRITICAL DEFICIT)
-- RPE Ceiling: **5/10** (low intensity only)
-- Training Adjustment: **Reduce volume by 35%** — cut working sets from 30 to ~20
+- RPE Ceiling: **6/10** (low intensity only)
+- Training Adjustment: **Reduce volume by 35%**
+- Nutrition: ❌ Major cheat detected
 - Safety Flags:
-  - ⛔ **Sleep Debt Critical**: <5.5 hours detected. Overtraining risk HIGH.
-  - ⛔ **Dehydration Warning**: 1.2L on training day. Risk of cramping and tendon injury.
-- Recommendation: Reschedule high-intensity. Do active recovery or rest day instead. Retest after sleep improvement.
+  - ⛔ **Sleep Debt Critical**: 4.5h detected
+  - ⛔ **Dehydration Warning**: 1.2L on training day
+- Recommendation: **Skip high-intensity. Do active recovery instead.**
 
 ## Notes & Tips
 

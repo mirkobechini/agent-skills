@@ -1,0 +1,10 @@
+{
+  "critical_issues": [
+    "\u26d4 SLEEP DEBT CRITICAL: 5.2h detected. Overtraining risk HIGH.",
+    "\u26d4 DEHYDRATION WARNING: 1.3L on training day. Risk of cramping and tendon injury."
+  ],
+  "warnings": [
+    "\u26a0\ufe0f  Elevated Fatigue: 7/10. Consider lighter workout."
+  ],
+  "clearance": false
+}

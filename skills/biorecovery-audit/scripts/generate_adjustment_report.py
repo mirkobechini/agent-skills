@@ -71,14 +71,38 @@ Today's Training Adjustments:
     else:
         report += f"  ❌ Hydration: LOW ({hydration}L). Risk of cramping and tendon injury.\n"
     
-    nutrition = metrics["nutrition_status"]
-    nutrition_text = {
-        "surplus": "Positive energy balance — supports hypertrophy",
-        "deficit": "Energy deficit — monitor fatigue closely",
-        "maintenance": "Maintenance calories maintained",
-        "untracked": "Nutrition not tracked — estimate conservatively"
-    }
-    report += f"  {nutrition_text.get(nutrition, 'Unknown status')}\n"
+    # Nutrition (flexible format)
+    nutrition = metrics.get("nutrition", {})
+    if "numeric" in nutrition:
+        num = nutrition["numeric"]
+        target = num["target"]
+        consumed = num["consumed"]
+        adherence = num["adherence_percent"]
+        report += f"  📊 Nutrition: {consumed}/{target} cal ({adherence}%)"
+        if adherence >= 95:
+            report += " ✓ On target\n"
+        elif adherence >= 85:
+            report += " ✓ Good adherence\n"
+        elif adherence >= 70:
+            report += " ⚠ Slightly off\n"
+        else:
+            report += " ❌ Significant deviation\n"
+    else:
+        normalized = nutrition.get("normalized", "untracked")
+        status_text = {
+            "adherence:95": "✓ Following diet perfectly",
+            "seguita-bene": "✓ Diet followed well",
+            "adherence:90": "✓ On target",
+            "on-target": "✓ On target",
+            "adherence:70": "⚠ Slightly off diet",
+            "sgarrata-leggera": "⚠ Light cheat",
+            "adherence:40": "❌ Significant cheat",
+            "sgarrata-forte": "❌ Major cheat",
+            "deficit": "Diet in deficit",
+            "untracked": "Not tracked"
+        }
+        status = status_text.get(normalized, normalized)
+        report += f"  📊 Nutrition: {status}\n"
     
     report += f"\nNext Check: Tomorrow morning (sleep tracking)\n"
     
@@ -106,7 +130,7 @@ def main():
         
         # Save report
         output_path = Path(args.output)
-        with open(output_path, "w") as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(report)
         
         # Print to console

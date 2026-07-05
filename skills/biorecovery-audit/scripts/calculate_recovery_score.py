@@ -19,7 +19,7 @@ def calculate_recovery_score(metrics: dict) -> dict:
     - Sleep adjustment: ±0.15x (restful +0.15, interrupted 0, poor -0.15)
     - Hydration adjustment: ±0.1x (optimal 0, low -0.1)
     - Fatigue adjustment: -0.01x per fatigue point above 5
-    - Nutrition boost: +0.05x if surplus, -0.1x if deficit
+    - Nutrition boost: +0.05x if on-target/good, -0.1x if deficit, adaptive for numeric
     - Clamp: 0.7x–1.2x
     """
     
@@ -50,14 +50,39 @@ def calculate_recovery_score(metrics: dict) -> dict:
     elif fatigue <= 3:
         score += 0.05
     
-    # Nutrition contribution
-    nutrition = metrics["nutrition_status"]
-    if nutrition == "surplus":
-        score += 0.05
-    elif nutrition == "deficit":
-        score -= 0.1
-    elif nutrition == "untracked":
-        score -= 0.02  # Conservative penalty
+    # Nutrition contribution (flexible: descriptive or numeric)
+    nutrition = metrics.get("nutrition", {})
+    
+    if "numeric" in nutrition:
+        # Numeric mode: use adherence percent and delta
+        num = nutrition["numeric"]
+        adherence = num["adherence_percent"]
+        delta = num["delta"]
+        
+        if adherence >= 95:
+            score += 0.05  # Perfect adherence
+        elif adherence >= 85:
+            score += 0  # Good adherence
+        elif adherence >= 70:
+            score -= 0.05  # Acceptable but off
+        else:
+            score -= 0.1  # Poor adherence
+    else:
+        # Descriptive mode: use status
+        normalized = nutrition.get("normalized", "untracked")
+        
+        if "adherence:95" in normalized or "seguita-bene" in normalized:
+            score += 0.05
+        elif "adherence:90" in normalized or "on-target" in normalized:
+            score += 0
+        elif "sgarrata-leggera" in normalized or "adherence:70" in normalized:
+            score -= 0.05
+        elif "sgarrata-forte" in normalized or "adherence:40" in normalized:
+            score -= 0.1
+        elif "deficit" in normalized:
+            score -= 0.1
+        elif "untracked" in normalized:
+            score -= 0.02  # Conservative penalty
     
     # Clamp to 0.7x–1.2x range
     score = max(0.7, min(1.2, score))
@@ -76,7 +101,7 @@ def calculate_recovery_score(metrics: dict) -> dict:
         "sleep_quality": sleep_quality,
         "hydration_liters": hydration_liters,
         "fatigue_level": fatigue,
-        "nutrition_status": nutrition,
+        "nutrition_info": nutrition,
     }
 
 

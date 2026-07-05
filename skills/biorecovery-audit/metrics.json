@@ -1,0 +1,12 @@
+{
+  "sleep": {
+    "hours": 5.2,
+    "quality": "poor"
+  },
+  "hydration": 1.3,
+  "nutrition": {
+    "status": "sgarrata-forte",
+    "normalized": "adherence:40"
+  },
+  "perceived_fatigue_level": 7
+}

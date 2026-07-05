@@ -1,0 +1,6 @@
+{
+  "timestamp": "2026-07-05T21:40:51.938665",
+  "recovery_score": 1.1,
+  "session_id": "default",
+  "storage_location": "session.persistent_storage.recovery_score"
+}
