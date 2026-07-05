@@ -37,7 +37,7 @@ def write_metadata(pdf_path: str, updates: dict, output_path: str = None) -> str
     """Update metadata and save to output_path. Returns the output path."""
     if output_path is None:
         base = os.path.splitext(pdf_path)[0]
-        output_path = base + "_metadata.pdf"
+        output_path = base + "_updated.pdf"
 
     doc = fitz.open(pdf_path)
     current = dict(doc.metadata) if doc.metadata else {}

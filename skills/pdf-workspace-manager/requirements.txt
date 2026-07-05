@@ -1,0 +1,8 @@
+# PDF Workspace Manager dependencies
+pymupdf>=1.23.0    # PyMuPDF (fitz) for advanced PDF operations
+pypdf>=3.17.0      # pypdf for structural PDF operations
+
+# Development dependencies (optional)
+pytest>=7.4.0      # Testing framework
+black>=23.9.1      # Code formatter
+pylint>=2.17.5     # Code linter

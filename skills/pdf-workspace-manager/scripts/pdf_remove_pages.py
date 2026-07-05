@@ -100,7 +100,7 @@ def main():
     output_path = args.output
     if not output_path:
         base = os.path.splitext(args.input)[0]
-        output_path = base + "_cleaned.pdf"
+        output_path = base + "_removed.pdf"
 
     remaining = remove_pages(args.input, remove_set, output_path)
 

@@ -32,13 +32,16 @@ def pdf_to_html(pdf_path: str, output_path: str = None) -> str:
         base = os.path.splitext(pdf_path)[0]
         output_path = base + ".pdf.html"
 
+    # Read page_count BEFORE closing document
+    total_pages = doc.page_count
+    
     pages_html = []
-    for i in range(doc.page_count):
+    for i in range(total_pages):
         page = doc[i]
         svg = page.get_svg_image(matrix=fitz.Matrix(1.5, 1.5))
         pages_html.append(
             f'<div class="page" data-page="{i + 1}">\n'
-            f'  <div class="page-label">Page {i + 1} of {doc.page_count}</div>\n'
+            f'  <div class="page-label">Page {i + 1} of {total_pages}</div>\n'
             f'  {svg}\n'
             f'</div>'
         )
@@ -87,14 +90,14 @@ def pdf_to_html(pdf_path: str, output_path: str = None) -> str:
 <div class="toolbar">
   <button onclick="goPage(-1)">◀ Prev</button>
   <button onclick="goPage(1)">Next ▶</button>
-  <span class="page-counter" id="pageCounter">Page 1 of {doc.page_count}</span>
+  <span class="page-counter" id="pageCounter">Page 1 of {total_pages}</span>
 </div>
 <div class="pages-container" id="pagesContainer">
 {''.join(pages_html)}
 </div>
 <script>
   var currentPage = 1;
-  var totalPages = {doc.page_count};
+  var totalPages = {total_pages};
   function showPage(n) {{
     if (n < 1 || n > totalPages) return;
     currentPage = n;
