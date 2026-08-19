@@ -1,0 +1,168 @@
+# Complete GitHub Actions workflow for building and releasing a Tauri v2 desktop app
+# with FastAPI PyInstaller sidecar across Windows, macOS, and Linux.
+#
+# Place this file at: .github/workflows/release.yml
+#
+# Trigger: push a tag matching v* (e.g., git tag v1.2.0 && git push origin v1.2.0)
+
+name: Build & Release Desktop App
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Job 1: Wait for CI on main to pass ──────────────────────────────
+  wait-for-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for CI on main to pass
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set +e
+          SHA=$(gh api repos/${REPO}/git/refs/heads/main --jq '.object.sha' 2>/dev/null)
+          if [ -z "$SHA" ]; then echo "No SHA, proceeding."; exit 0; fi
+          for i in $(seq 1 30); do
+            RESULT=$(gh api repos/${REPO}/commits/${SHA}/check-runs \
+              --jq '[.check_runs[] | select(.name == "backend" or .name == "frontend") | .conclusion // "pending"] | join(",")')
+            echo "  iteration $i: $RESULT"
+            if echo "$RESULT" | grep -q "failure"; then echo "CI failed"; exit 1; fi
+            if echo "$RESULT" | grep -q "success,success"; then echo "CI passed"; exit 0; fi
+            sleep 30
+          done
+          echo "Timeout, proceeding anyway."; exit 0
+
+  # ── Job 2: Build (matrix: 3 OS) ─────────────────────────────────────
+  build:
+    needs: [wait-for-ci]
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Bump version from tag
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          python3 -c "
+          import json, re
+          for f in ['desktop/src-tauri/tauri.conf.json', 'frontend/package.json']:
+              with open(f) as fh: c = json.load(fh)
+              c['version'] = '$VERSION'
+              with open(f, 'w') as fh: json.dump(c, fh, indent=2)
+          with open('backend/pyproject.toml') as fh: content = fh.read()
+          content = re.sub(r'^version = \".*\"', 'version = \"$VERSION\"', content, flags=re.MULTILINE)
+          with open('backend/pyproject.toml', 'w') as fh: fh.write(content)
+          "
+          echo "Version bumped to $VERSION"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install frontend deps
+        run: cd frontend && npm ci
+      - name: Install desktop frontend deps
+        run: cd desktop/frontend && npm ci
+      - name: Install backend deps
+        run: cd backend && pip install -r requirements.txt
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: |
+            x86_64-pc-windows-msvc
+            aarch64-apple-darwin
+            x86_64-apple-darwin
+            x86_64-unknown-linux-gnu
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "desktop/src-tauri -> target"
+
+      - name: Install Linux deps
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential \
+            curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Build sidecar
+        shell: bash
+        run: |
+          cd desktop
+          pip install pyinstaller
+          bash build-sidecar.sh
+
+      - name: Rename sidecar for Tauri target triple
+        shell: bash
+        run: |
+          TRIPLE=$(rustc -vV | grep "^host:" | awk '{print $2}')
+          SIDECAR="desktop/src-tauri/binaries/fastapi-sidecar"
+          EXT=""
+          case "$TRIPLE" in *windows*|*msvc*) EXT=".exe" ;; esac
+          if [ -f "${SIDECAR}${EXT}" ]; then
+            mv "${SIDECAR}${EXT}" "${SIDECAR}-${TRIPLE}${EXT}"
+            echo "Renamed to fastapi-sidecar-${TRIPLE}${EXT}"
+          fi
+
+      - name: Build Tauri app
+        # CRITICAL: npm --prefix ../frontend exec tauri from src-tauri/ dir
+        # This uses the binary from desktop/frontend/node_modules but keeps CWD in src-tauri/
+        run: |
+          cd desktop/src-tauri
+          npm --prefix ../frontend exec tauri build -- --ci
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ runner.os }}
+          path: |
+            desktop/src-tauri/target/release/bundle/
+            !desktop/src-tauri/target/release/bundle/**/*.pdb
+
+  # ── Job 3: Create GitHub Release ────────────────────────────────────
+  create-release:
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: app-*
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "App ${{ github.ref_name }}"
+          draft: true
+          prerelease: false
+          files: |
+            **/*.msi
+            **/*.dmg
+            **/*.AppImage
+            **/*.deb

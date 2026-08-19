@@ -1,0 +1,67 @@
+{
+  "tauri_conf_example": {
+    "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-config-schema/schema.json",
+    "productName": "App Name",
+    "version": "0.1.0",
+    "identifier": "com.example.app",
+    "build": {
+      "beforeDevCommand": {
+        "script": "npm run dev",
+        "cwd": "../frontend"
+      },
+      "devUrl": "http://localhost:3000",
+      "beforeBuildCommand": {
+        "script": "npm run build",
+        "cwd": "../frontend"
+      },
+      "frontendDist": "../frontend/out"
+    },
+    "bundle": {
+      "active": true,
+      "targets": "all",
+      "externalBin": ["binaries/fastapi-sidecar"],
+      "windows": {
+        "nsis": {
+          "installMode": "currentUser",
+          "installerHooks": "installer.nsh"
+        }
+      },
+      "macOS": {
+        "minimumSystemVersion": "10.15"
+      }
+    },
+    "plugins": {
+      "updater": {
+        "endpoints": [
+          "https://github.com/{owner}/{repo}/releases/latest/download/latest.json"
+        ]
+      }
+    }
+  },
+  "cargo_toml_example": {
+    "dependencies": {
+      "tauri": { "version": "2", "features": ["tray-icon"] },
+      "tauri-plugin-opener": "2",
+      "tauri-plugin-shell": "2",
+      "tauri-plugin-store": "2",
+      "tauri-plugin-updater": "2",
+      "tauri-plugin-dialog": "2",
+      "tauri-plugin-single-instance": "2",
+      "serde": { "version": "1", "features": ["derive"] },
+      "serde_json": "1",
+      "log": "0.4"
+    }
+  },
+  "env_desktop_example": {
+    "DATABASE_URL": "sqlite:///./data/app.db",
+    "SECRET_KEY": "change-me-in-production",
+    "ALLOWED_ORIGINS": "http://localhost:3000,http://tauri.localhost,https://tauri.localhost,tauri://localhost",
+    "LOG_LEVEL": "INFO"
+  },
+  "sidecar_target_triples": {
+    "windows": "x86_64-pc-windows-msvc.exe",
+    "macos_arm": "aarch64-apple-darwin",
+    "macos_intel": "x86_64-apple-darwin",
+    "linux": "x86_64-unknown-linux-gnu"
+  }
+}

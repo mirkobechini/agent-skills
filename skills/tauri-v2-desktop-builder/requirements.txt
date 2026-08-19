@@ -1,0 +1,16 @@
+# Core backend
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# PyInstaller (for building sidecar)
+pyinstaller>=6.0.0
+
+# Optional: PDF processing (if backend handles PDFs)
+# pymupdf>=1.24.0
+# pypdf>=4.0.0
+
+# Optional: database
+# sqlalchemy>=2.0.0
+# aiosqlite>=0.20.0
