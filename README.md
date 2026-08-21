@@ -6,6 +6,7 @@ A collection of reusable, on-demand skills compatible with any agent that suppor
 
 | Skill                                                                    | Description                                                                                                                                                           |
 | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`ai-agent-builder`](./skills/ai-agent-builder/SKILL.md)                 | Crea agenti AI conversazionali con personalità, memoria persistente e interfaccia Telegram. Copre LangGraph, system prompt design, tool registry, DB e deploy locale. |
 | [`biorecovery-audit`](./skills/biorecovery-audit/SKILL.md)               | Recovery audit system for preventing overtraining: tracks sleep, hydration, nutrition, and fatigue to compute recovery multipliers (0.7x–1.2x) for training.          |
 | [`pdf-workspace-manager`](./skills/pdf-workspace-manager/SKILL.md)       | Full PDF management: browser preview, merge, split, reorder, remove pages, text editing, and metadata editing. Powered by PyMuPDF and pypdf.                          |
 | [`pr-summary-handoff`](./skills/pr-summary-handoff/SKILL.md)             | Guides the developer through creating a Pull Request on GitHub after completing a feature or hotfix branch, generating the PR link and a summary of changes.          |
